@@ -234,12 +234,6 @@ impl MDBook {
 
     /// Run `rustdoc` tests on the book, linking against the provided libraries.
     pub fn test(&mut self, library_paths: Vec<&str>) -> Result<()> {
-        let library_args: Vec<&str> = (0..library_paths.len())
-            .map(|_| "-L")
-            .zip(library_paths.into_iter())
-            .flat_map(|x| vec![x.0, x.1])
-            .collect();
-
         let temp_dir = TempFileBuilder::new().prefix("mdbook-").tempdir()?;
 
         // FIXME: Is "test" the proper renderer name to use here?
@@ -266,26 +260,15 @@ impl MDBook {
                 let mut tmpf = utils::fs::create_file(&path)?;
                 tmpf.write_all(ch.content.as_bytes())?;
 
-                let mut cmd = Command::new("rustdoc");
-                cmd.arg(&path).arg("--test").args(&library_args);
-
-                if let Some(edition) = self.config.rust.edition {
-                    match edition {
-                        RustEdition::E2015 => {
-                            cmd.args(&["--edition", "2015"]);
-                        }
-                        RustEdition::E2018 => {
-                            cmd.args(&["--edition", "2018"]);
-                        }
-                    }
-                }
+                let mut cmd = Command::new("./test");
+                cmd.arg(&path);
 
                 let output = cmd.output()?;
 
                 if !output.status.success() {
                     failed = true;
                     error!(
-                        "rustdoc returned an error:\n\
+                        "./test returned an error:\n\
                         \n--- stdout\n{}\n--- stderr\n{}",
                         String::from_utf8_lossy(&output.stdout),
                         String::from_utf8_lossy(&output.stderr)
